@@ -70,13 +70,33 @@ The portable version is recommended for distribution as it:
 
 ## API Key Management
 
-The application requires an Anthropic API Key to function. You can:
+The application requires an Anthropic API Key for AI-powered document analysis.
 
-1. Enter it when prompted on first launch
-2. Update it later by opening DevTools (Ctrl+Shift+I) and running:
-   ```javascript
-   localStorage.setItem('anthropic_api_key', 'your-key-here')
-   ```
+### Adding Your API Key
+
+When you first launch the app, you'll see a prominent **API Key Management** section at the top:
+
+1. Click the **"Add API Key"** button
+2. Enter your Anthropic API key (get one at: https://console.anthropic.com/settings/keys)
+3. Click **"Save API Key"** (or press Enter)
+4. Your key is now configured and ready to use!
+
+### API Key Features
+
+- **Secure Storage**: Stored locally in your browser (never sent anywhere except Anthropic's API)
+- **Password Masked**: Input is hidden for security
+- **Easy Updates**: Click "Update" to change your key anytime
+- **Status Display**: Shows last 4 characters when configured (e.g., •••••••a1b2)
+- **Direct Links**: One-click access to Anthropic's key generation page
+- **Validation**: Automatic check before analysis to ensure key is configured
+
+### Alternative Methods
+
+If you prefer, you can also set the API key via DevTools (Ctrl+Shift+I):
+```javascript
+localStorage.setItem('anthropic_api_key', 'your-key-here')
+// Then refresh the page
+```
 
 ## Troubleshooting
 
