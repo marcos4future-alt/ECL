@@ -1,0 +1,51 @@
+{
+  "name": "document-analyzer",
+  "version": "1.0.0",
+  "description": "Avantis ECL powered by iDC - Document Analysis Tool",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build:portable": "electron-builder --win portable",
+    "pack": "electron-builder --dir"
+  },
+  "author": "Avantis Group",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.avantis.documentanalyzer",
+    "productName": "Document Analyzer",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "public/**/*",
+      "src/**/*"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    }
+  }
+}

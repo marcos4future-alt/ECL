@@ -1,0 +1,9 @@
+Place your application icon here as 'icon.ico' or 'icon.png'
+
+For best results:
+- PNG format: 256x256 pixels or 512x512 pixels
+- ICO format: Multi-resolution icon with 16x16, 32x32, 48x48, 256x256 sizes
+
+The electron-builder will automatically convert PNG to ICO if needed.
+
+If no icon is provided, the application will use the default Electron icon.
