@@ -16,8 +16,19 @@ export default function DocumentAnalyzer() {
   const [excelData, setExcelData] = useState(null);
   const [htmlData, setHtmlData] = useState(null);
   const [librariesLoaded, setLibrariesLoaded] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const fileInputRef = useRef(null);
   const complianceInputRef = useRef(null);
+
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem('anthropic_api_key');
+    if (savedKey) {
+      setApiKey(savedKey);
+      window.ANTHROPIC_API_KEY = savedKey;
+    }
+  }, []);
 
   useEffect(() => {
     const loadLibraries = () => {
@@ -480,6 +491,14 @@ export default function DocumentAnalyzer() {
       return;
     }
 
+    // Check for API key before proceeding
+    const currentApiKey = apiKey || localStorage.getItem('anthropic_api_key') || window.ANTHROPIC_API_KEY;
+    if (!currentApiKey || currentApiKey.trim() === '') {
+      setError('Anthropic API Key is required for analysis. Please add your API key first.');
+      setShowApiKeyInput(true);
+      return;
+    }
+
     setError('');
     setLoading(true);
     setStatus('Preparing files...');
@@ -863,6 +882,28 @@ export default function DocumentAnalyzer() {
     setPrompt(complianceNote + 'Extrapolate an excel checklist to ensure compliance with the attached procedure and attached reference documents, use the any reference no. as order of tasks and add any references and acceptance criteria into task.\n\nWhen extracting images ignore the cover page, headers and footers, do not extract company logos.\n\nFirst Row to be checklist name, with the second row the column titles, use Category as 1st column (find something common to use as group category), 2nd column is the Task, 3rd column is Type, to include Custom, Date, Range, Recorded, Images. 4th Column to be the Value for 3rd column based on the text in the task, there must be at least 2 values using "/" as divider (do not include units in range and these must be numerical) (Convert all N/A to NA), 5th Column to be Impact, ranging from -2 (highest criticality),-1 (second highest), or 1 (lowest criticality) and -3 (stop the job) (displayed as 1/-3, 1/-2, 1/-1, 1/1) there must be an impact for each answer, no text, just the number and divider. NOTE: When Type is Custom and Value has multiple values with "/" dividers, the Impact MUST have the same number of values with "/" divider. 6th column being the Default, leave column blank. 7th column (column G) is named Images and the image filename from images folder MUST be placed in this 7th column, NOTE this is a new task for the images and must be related to the above task, using the same 1st column category description, do not import logos, it must include the image description, using Image for 3rd column with no information in 4th, 5th and 6th column, with the image filename in 7th column, the 8th column (column H) is Documents and MUST remain empty, 9th column (column I) is the Callout (DO NOT MOVE the Callout to a different column for Image tasks, it must ALWAYS be in column 9), this will be references to the risk assessment, Warning, Caution, Note, Reference, Personnel, Compliance. Use "Reference" when the task has a reference found in the Compliance Document. Use "Compliance" when the task is NEW and was added as an additional task (not found in the Original Source Document). If a task has multiple callouts, use "/" as divider. If a task has 2 callouts of the same type with 2 different callout texts, list both callout types and both texts using "/" as divider (note where image task is added, ensure the callout is in the 9th column and callout text is in the 10th column). 10th Column is the Callout Text with the relevant text relating to column 9. If a task has multiple callout texts, use "/" as divider. Where tasks have been added from the Compliance document add these details to the Reference Callout Text.\n\n⚠️ CRITICAL - DO NOT USE RANGE UNLESS SPECIFIED IN THE TASK\n- Do NOT add Range type without references where the measurements are referenced from\n- Range should ONLY be used when the source document explicitly provides numerical measurements with references\n- When in doubt, use Custom type instead of Range\n\nIf inspection photos/images are requested from the original tasks, give details in the Task, use Custom as Type and Value is Yes/No/NA.\n\nAlways keep the Documents column empty.\n\n⚠️ CRITICAL - CALLOUT SPACING FOR IMAGE TASKS\n- When adding Image tasks, the Callout must ALWAYS be in column 9 (column I)\n- Callout Text must ALWAYS be in column 10 (column J)\n- Do NOT move callouts to different columns for image rows\n\n=== DOCUMENTATION CATEGORY TASKS ===\nUse these EXACT 11 tasks for Documentation category (EXACTLY as shown):\n\nDocumentation,Complete findings section with detailed observations,Custom,Complete/Incomplete,1/-2,,,,Personnel,Record all inspection findings with detailed descriptions\nDocumentation,Provide recommendations based on inspection results,Custom,Complete/Incomplete,1/-2,,,,Personnel,Include maintenance and repair recommendations\nDocumentation,Add job comments and observations,Custom,Complete/Incomplete,1/-1,,,,Personnel,Document additional observations and comments\nDocumentation,Inspector name and signature,Custom,Complete/Incomplete,1/-3,,,,Personnel,Inspector identification and certification required\nDocumentation,Reviewer name and signature,Custom,Complete/Incomplete,1/-3,,,,Personnel,Independent review and approval required\nDocumentation,Record Inspection date,Date,Date,,,,,Personnel,Periodic Inspection/Ad-Hoc Inspection/ Mechanical Integrity/ Ultrasonic Thickness Measurement (UTM)/ Close\nDocumentation,Inspection type,Custom,Visual Inspection (CVI),1/1/1/1/1,,,,,\nDocumentation,Contractor,Recorded,Name,,,,,,\nDocumentation,Contract (PO No),Recorded,Number,,,,,,\nDocumentation,Activity Description,Custom,Internal/ External,1/1,,,,,\nDocumentation,Vessel Name,Recorded,Name,,,,,,\n\nDo not create a Readme file.\nDownload Zip file with Excel checklist and images folder containing all extracted images.\n\nOutput as CSV format with EXACTLY 9 commas per row (10 columns).');
   };
 
+  const handleSaveApiKey = (key) => {
+    const trimmedKey = key.trim();
+    if (trimmedKey) {
+      setApiKey(trimmedKey);
+      localStorage.setItem('anthropic_api_key', trimmedKey);
+      window.ANTHROPIC_API_KEY = trimmedKey;
+      setShowApiKeyInput(false);
+      setError('');
+      setStatus('✓ API Key saved successfully');
+    } else {
+      setError('API Key cannot be empty');
+    }
+  };
+
+  const handleClearApiKey = () => {
+    setApiKey('');
+    localStorage.removeItem('anthropic_api_key');
+    window.ANTHROPIC_API_KEY = '';
+    setShowApiKeyInput(true);
+    setStatus('API Key cleared');
+  };
+
   const allImages = [...extractedImages, ...complianceImages];
 
   return (
@@ -877,6 +918,87 @@ export default function DocumentAnalyzer() {
         </div>
 
         <div className="p-6 space-y-6">
+          {/* API Key Management Section */}
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-gray-800 mb-1">Anthropic API Key for Analysis</h3>
+                {apiKey ? (
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-green-600">✓ API Key configured (•••••••{apiKey.slice(-4)})</p>
+                    <button
+                      onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+                      className="text-xs text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {showApiKeyInput ? 'Hide' : 'Update'}
+                    </button>
+                    <button
+                      onClick={handleClearApiKey}
+                      className="text-xs text-red-600 hover:text-red-800 underline"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-red-600">⚠️ No API Key configured - required for AI analysis</p>
+                    <button
+                      onClick={() => setShowApiKeyInput(true)}
+                      className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Add API Key
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {showApiKeyInput && (
+              <div className="mt-3 space-y-2">
+                <input
+                  type="password"
+                  placeholder="Enter your Anthropic API Key (sk-ant-...)"
+                  defaultValue={apiKey}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSaveApiKey(e.target.value);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  id="apiKeyInput"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const input = document.getElementById('apiKeyInput');
+                      handleSaveApiKey(input.value);
+                    }}
+                    className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                  >
+                    Save API Key
+                  </button>
+                  <button
+                    onClick={() => setShowApiKeyInput(false)}
+                    className="px-3 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500"
+                  >
+                    Cancel
+                  </button>
+                  <a
+                    href="https://console.anthropic.com/settings/keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:text-blue-800 underline ml-2"
+                  >
+                    Get API Key from Anthropic
+                  </a>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Your API key is stored locally in your browser and only sent to Anthropic's API for document analysis.
+                </p>
+              </div>
+            )}
+          </div>
+
           {!librariesLoaded && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-yellow-700 text-sm flex items-center gap-2">
